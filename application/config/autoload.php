@@ -64,7 +64,7 @@ $autoload['libraries'] = array('database', 'session');
 |	$autoload['helper'] = array('url', 'file');
 */
 
-$autoload['helper'] = array('url', 'html', 'form', 'general');
+$autoload['helper'] = array('url', 'html', 'form');
 
 
 /*
@@ -110,8 +110,6 @@ $autoload['language'] = array();
 */
 
 $autoload['model'] = array();
-
-
 $autoload['sparks'] = array('ion_auth/2.5.0');
 
 

@@ -1,5 +1,4 @@
-<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
-
+<?php 
 class  User extends CI_Controller {
 
 	public function __construct() {
@@ -7,9 +6,8 @@ class  User extends CI_Controller {
 	}
 
 
-	public function login()
-	{
-		echo 'login form<br />';
+	public function login()	{
+		echo 'Loggin Formulario<br />';
 		var_dump($this->ion_auth->user()->row());
 	}
 }

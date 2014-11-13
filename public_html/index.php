@@ -1,5 +1,7 @@
 <?php
 
+require '../vendor/autoload.php';
+
 /*
  *---------------------------------------------------------------
  * APPLICATION ENVIRONMENT
@@ -18,11 +20,7 @@
  * NOTE: If you change these, also change the error_reporting() code below
  *
  */
-	//var_dump($_SERVER);
-	//define('ENVIRONMENT', 'development');
-
-	switch ($_SERVER['HTTP_HOST'])
-	{
+	switch ($_SERVER['HTTP_HOST']){
 		case 'localhost':
 			$env = 'development';
 		break;

@@ -1,17 +1,16 @@
 <?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
+use Netcarver\Textile;
+
 class Welcome extends CI_Controller {
 
 
 	public function __construct() {
-		parent::__construct();
-
+		parent::__construct();		
 		$this->ion_auth->login('admin@admin.com', 'password');
-		
 		if ($this->ion_auth->logged_in() == false) {
 			redirect('user/login');
-		}
-
+		}                
 	}
 	/**
 	 * Index Page for this controller.
@@ -28,16 +27,10 @@ class Welcome extends CI_Controller {
 	 * map to /index.php/welcome/<method_name>
 	 * @see http://codeigniter.com/user_guide/general/urls.html
 	 */
-	public function index()
-	{
-		$this->benchmark->mark('ionAuth_start');
-		$user = $this->ion_auth->user()->row();
-		$this->benchmark->mark('ionAuth_end');
+	public function index()	{
+                $data = array('subview' => 'homepage');
+                $this->load->view('layouts/layout', $data);
 
-		dump($user);
-
-		$this->output->enable_profiler(ENVIRONMENT == 'development');
-		$this->load->view('welcome_message');
 	}
 }
 
