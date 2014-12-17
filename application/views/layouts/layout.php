@@ -3,13 +3,9 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Soluciones PM 14</title>
+    <title>SolucionesPM</title>
     
-    <link rel="stylesheet" href="style.css" type="text/css" />
-    
-    <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link rel="stylesheet" href="<?php echo site_url('style.css'); ?>" type="text/css" />
 
 </head>
 
@@ -17,17 +13,18 @@
 
 <div class="container">
 	<header class="highlight">
-		<h1><a href="<?php echo site_url(); ?>">Soluciones PM 14</a></h1>
+		<h1><a href="<?php echo site_url(); ?>">Preguntame</a></h1>
 		<ul class="nav">
 			<li><a href="<?php echo site_url(); ?>">Inicio</a></li>
 			<li><a href="<?php echo site_url('questions/listing'); ?>">Preguntas</a></li>
+			<li><?php echo $this->ion_auth->logged_in() == true ? anchor('users/logout', 'Logout') : anchor('users/login', 'Login') ?></li>
 		</ul>
 	</header>
 	<div class="main">
-            <?php $this->load->view($subview); ?>
+		<?php $this->load->view($subview); ?>
 	</div>
 	<footer>
-		&copy; <?php echo date('Y'); ?> Soluciones PM 14
+		&copy; <?php echo date('Y'); ?> Preguntame
 	</footer>
 </div>
 

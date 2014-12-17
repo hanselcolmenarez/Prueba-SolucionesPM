@@ -19,11 +19,16 @@ class MY_Model extends CI_Model
      * guessed by pluralising the model name.
      */
     protected $_table;
+
+    /**
+     * Database conn object; will use default connection
+     * unless overridden
+     */
+    protected $_db;
     
     /**
-     * The database connection object. Will be set to the default
-     * connection. This allows individual models to use different DBs 
-     * without overwriting CI's global $this->db connection.
+     * Local Database conn object; will use instead of $this->db
+     * so that we don't override current database connection
      */
     public $_database;
 
@@ -39,7 +44,6 @@ class MY_Model extends CI_Model
     protected $soft_delete = FALSE;
     protected $soft_delete_key = 'deleted';
     protected $_temporary_with_deleted = FALSE;
-    protected $_temporary_only_deleted = FALSE;
 
     /**
      * The various callbacks available to the model. Each are
@@ -103,8 +107,8 @@ class MY_Model extends CI_Model
 
         $this->load->helper('inflector');
 
+        $this->_set_database();
         $this->_fetch_table();
-        $this->_database = $this->db;
 
         array_unshift($this->before_create, 'protect_attributes');
         array_unshift($this->before_update, 'protect_attributes');
@@ -121,7 +125,22 @@ class MY_Model extends CI_Model
      */
     public function get($primary_value)
     {
-		return $this->get_by($this->primary_key, $primary_value);
+        $this->trigger('before_get');
+
+        if ($this->soft_delete && $this->_temporary_with_deleted !== TRUE)
+        {
+            $this->_database->where($this->soft_delete_key, FALSE);
+        }
+
+        $row = $this->_database->where($this->primary_key, $primary_value)
+                        ->get($this->_table)
+                        ->{$this->_return_type()}();
+        $this->_temporary_return_type = $this->return_type;
+
+        $row = $this->trigger('after_get', $row);
+
+        $this->_with = array();
+        return $row;
     }
 
     /**
@@ -131,13 +150,12 @@ class MY_Model extends CI_Model
     public function get_by()
     {
         $where = func_get_args();
-        
+        $this->_set_where($where);
+
         if ($this->soft_delete && $this->_temporary_with_deleted !== TRUE)
         {
-            $this->_database->where($this->soft_delete_key, (bool)$this->_temporary_only_deleted);
+            $this->_database->where($this->soft_delete_key, FALSE);
         }
-		
-		$this->_set_where($where);
 
         $this->trigger('before_get');
 
@@ -158,7 +176,7 @@ class MY_Model extends CI_Model
     {
         if ($this->soft_delete && $this->_temporary_with_deleted !== TRUE)
         {
-            $this->_database->where($this->soft_delete_key, (bool)$this->_temporary_only_deleted);
+            $this->_database->where($this->soft_delete_key, FALSE);
         }
 
         $this->_database->where_in($this->primary_key, $values);
@@ -172,13 +190,12 @@ class MY_Model extends CI_Model
     public function get_many_by()
     {
         $where = func_get_args();
+        $this->_set_where($where);
 
         if ($this->soft_delete && $this->_temporary_with_deleted !== TRUE)
         {
-            $this->_database->where($this->soft_delete_key, (bool)$this->_temporary_only_deleted);
+            $this->_database->where($this->soft_delete_key, FALSE);
         }
-
-        $this->_set_where($where);
 
         return $this->get_all();
     }
@@ -190,12 +207,12 @@ class MY_Model extends CI_Model
     public function get_all()
     {
         $this->trigger('before_get');
-        
+
         if ($this->soft_delete && $this->_temporary_with_deleted !== TRUE)
         {
-            $this->_database->where($this->soft_delete_key, (bool)$this->_temporary_only_deleted);
+            $this->_database->where($this->soft_delete_key, FALSE);
         }
-        
+
         $result = $this->_database->get($this->_table)
                            ->{$this->_return_type(1)}();
         $this->_temporary_return_type = $this->return_type;
@@ -215,6 +232,8 @@ class MY_Model extends CI_Model
      */
     public function insert($data, $skip_validation = FALSE)
     {
+        $valid = TRUE;
+
         if ($skip_validation === FALSE)
         {
             $data = $this->validate($data);
@@ -257,6 +276,8 @@ class MY_Model extends CI_Model
      */
     public function update($primary_value, $data, $skip_validation = FALSE)
     {
+        $valid = TRUE;
+
         $data = $this->trigger('before_update', $data);
 
         if ($skip_validation === FALSE)
@@ -315,12 +336,12 @@ class MY_Model extends CI_Model
     {
         $args = func_get_args();
         $data = array_pop($args);
+        $this->_set_where($args);
 
         $data = $this->trigger('before_update', $data);
 
         if ($this->validate($data) !== FALSE)
         {
-            $this->_set_where($args);
             $result = $this->_database->set($data)
                                ->update($this->_table);
             $this->trigger('after_update', array($data, $result));
@@ -375,11 +396,9 @@ class MY_Model extends CI_Model
     public function delete_by()
     {
         $where = func_get_args();
-
-	    $where = $this->trigger('before_delete', $where);
-
         $this->_set_where($where);
 
+        $where = $this->trigger('before_delete', $where);
 
         if ($this->soft_delete)
         {
@@ -447,11 +466,6 @@ class MY_Model extends CI_Model
 
     public function relate($row)
     {
-		if (empty($row))
-        {
-		    return $row;
-        }
-		
         foreach ($this->belongs_to as $key => $value)
         {
             if (is_string($value))
@@ -467,15 +481,14 @@ class MY_Model extends CI_Model
 
             if (in_array($relationship, $this->_with))
             {
-                $this->load->model($options['model'], $relationship . '_model');
-
+                $this->load->model($options['model']);
                 if (is_object($row))
                 {
-                    $row->{$relationship} = $this->{$relationship . '_model'}->get($row->{$options['primary_key']});
+                    $row->{$relationship} = $this->{$options['model']}->get($row->{$options['primary_key']});
                 }
                 else
                 {
-                    $row[$relationship] = $this->{$relationship . '_model'}->get($row[$options['primary_key']]);
+                    $row[$relationship] = $this->{$options['model']}->get($row[$options['primary_key']]);
                 }
             }
         }
@@ -495,15 +508,14 @@ class MY_Model extends CI_Model
 
             if (in_array($relationship, $this->_with))
             {
-                $this->load->model($options['model'], $relationship . '_model');
-
+                $this->load->model($options['model']);
                 if (is_object($row))
                 {
-                    $row->{$relationship} = $this->{$relationship . '_model'}->get_many_by($options['primary_key'], $row->{$this->primary_key});
+                    $row->{$relationship} = $this->{$options['model']}->get_many_by($options['primary_key'], $row->{$this->primary_key});
                 }
                 else
                 {
-                    $row[$relationship] = $this->{$relationship . '_model'}->get_many_by($options['primary_key'], $row[$this->primary_key]);
+                    $row[$relationship] = $this->{$options['model']}->get_many_by($options['primary_key'], $row[$this->primary_key]);
                 }
             }
         }
@@ -638,15 +650,6 @@ class MY_Model extends CI_Model
     public function with_deleted()
     {
         $this->_temporary_with_deleted = TRUE;
-        return $this;
-    }
-    
-    /**
-     * Only get deleted rows on the next call
-     */
-    public function only_deleted()
-    {
-        $this->_temporary_only_deleted = TRUE;
         return $this;
     }
 
@@ -859,6 +862,23 @@ class MY_Model extends CI_Model
         }
     }
 
+    /* --------------------------------------------------------------
+     * MULTIPLE DB LOADING
+     * ------------------------------------------------------------ */
+
+    private function _set_database()
+    {
+        if (!$this->_db)
+        {
+            $this->_database = $this->load->database();
+        }
+        else
+        {
+            $this->_database = $this->load->database($this->_db, TRUE);
+        }
+    }
+
+
     /**
      * Set WHERE parameters, cleverly
      */
@@ -868,17 +888,9 @@ class MY_Model extends CI_Model
         {
             $this->_database->where($params[0]);
         }
-    	else if(count($params) == 2)
-		{
-			$this->_database->where($params[0], $params[1]);
-		}
-		else if(count($params) == 3)
-		{
-			$this->_database->where($params[0], $params[1], $params[2]);
-		}
         else
         {
-            $this->_database->where($params);
+            $this->_database->where($params[0], $params[1]);
         }
     }
 

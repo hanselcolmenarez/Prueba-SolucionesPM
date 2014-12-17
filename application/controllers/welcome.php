@@ -2,15 +2,11 @@
 
 use Netcarver\Textile;
 
-class Welcome extends CI_Controller {
+class Welcome extends MY_Controller {
 
 
 	public function __construct() {
-		parent::__construct();		
-		$this->ion_auth->login('admin@admin.com', 'password');
-		if ($this->ion_auth->logged_in() == false) {
-			redirect('user/login');
-		}                
+		parent::__construct();                
 	}
 	/**
 	 * Index Page for this controller.
@@ -28,8 +24,11 @@ class Welcome extends CI_Controller {
 	 * @see http://codeigniter.com/user_guide/general/urls.html
 	 */
 	public function index()	{
-                $data = array('subview' => 'homepage');
-                $this->load->view('layouts/layout', $data);
+
+            $user = $this->ion_auth->user()->row();
+            $this->output->enable_profiler(ENVIRONMENT == 'development');
+            $data = array('subview' => 'homepage');
+            $this->load->view('layouts/layout', $data);
 
 	}
 }

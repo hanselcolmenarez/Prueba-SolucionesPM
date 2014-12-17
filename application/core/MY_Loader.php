@@ -1,4 +1,7 @@
 <?php  if (! defined('BASEPATH')) exit('No direct script access allowed');
+
+require APPPATH."third_party/MX/Loader.php";
+
 /**
  * Sparks
  *
@@ -7,6 +10,7 @@
  * @package		CodeIgniter
  * @author		CodeIgniter Reactor Dev Team
  * @author      Kenny Katzgrau <katzgrau@gmail.com>
+ * @author      Hansel Colmenarez <hanselcolmenarez@hotmail.com>
  * @since		CodeIgniter Version 1.0
  * @filesource
  */
@@ -20,10 +24,11 @@
  * @subpackage	Libraries
  * @author		CodeIgniter Reactor Dev Team
  * @author      Kenny Katzgrau <katzgrau@gmail.com>
+ * @author      Hansel Colmenarez <hanselcolmenarez@hotmail.com>
  * @category	Loader
  * @link		http://codeigniter.com/user_guide/libraries/loader.html
  */
-class MY_Loader extends CI_Loader
+class MY_Loader extends MX_Loader
 {
     /**
      * Keep track of which sparks are loaded. This will come in handy for being
